@@ -1,0 +1,1493 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Operación SER: Abre la bóveda</title>
+  <style>
+    :root {
+      --g1: #d4a017;
+      --g1-bg: #fff8e1;
+      --g2: #2e7d32;
+      --g2-bg: #e8f5e9;
+      --g3: #1565c0;
+      --g3-bg: #e3f2fd;
+      --g4: #c62828;
+      --g4-bg: #ffebee;
+      --bg: #1a1a2e;
+      --surface: #16213e;
+      --surface2: #0f3460;
+      --text: #eaeaea;
+      --accent: #e94560;
+      --gold: #ffd700;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-top: 90px;
+    }
+
+    /* Score bar */
+    #scoreBar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+      padding: 8px 12px;
+      background: linear-gradient(180deg, #0d0d1a 0%, var(--bg) 100%);
+      border-bottom: 2px solid var(--gold);
+      box-shadow: 0 4px 20px rgba(0,0,0,.5);
+    }
+    .group-box {
+      border-radius: 10px; padding: 8px 10px; text-align: center;
+      border: 2px solid transparent; transition: all .3s;
+      position: relative; overflow: visible;
+    }
+    .group-box[data-g="0"] { background: var(--g1-bg); border-color: var(--g1); color: #333; }
+    .group-box[data-g="1"] { background: var(--g2-bg); border-color: var(--g2); color: #333; }
+    .group-box[data-g="2"] { background: var(--g3-bg); border-color: var(--g3); color: #333; }
+    .group-box[data-g="3"] { background: var(--g4-bg); border-color: var(--g4); color: #333; }
+    .group-box.active-team { box-shadow: 0 0 16px 4px var(--gold); transform: scale(1.03); }
+    .group-box.glow-green { animation: glowGreen .8s ease; }
+    .group-box.glow-red { animation: glowRed .8s ease; }
+    .group-box.score-pop .score-num { animation: scorePop .5s ease; }
+    @keyframes glowGreen { 0%,100%{box-shadow:none} 50%{box-shadow:0 0 20px 6px #4caf50} }
+    @keyframes glowRed { 0%,100%{box-shadow:none} 50%{box-shadow:0 0 20px 6px #f44336} }
+    @keyframes scorePop { 0%{transform:scale(1)} 50%{transform:scale(1.4)} 100%{transform:scale(1)} }
+    .group-name { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+    .score-num { font-size: 1.8rem; font-weight: 800; line-height: 1.1; }
+    .group-meta { font-size: .7rem; margin-top: 2px; min-height: 1em; }
+    .shield-icon { font-size: 1.1rem; }
+    .float-pts {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      font-size: 1.6rem; font-weight: 900; pointer-events: none; z-index: 10;
+      animation: floatUp 1.2s ease forwards;
+    }
+    .float-pts.pos { color: #2e7d32; }
+    .float-pts.neg { color: #c62828; }
+    @keyframes floatUp {
+      0% { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+      100% { opacity: 0; transform: translate(-50%,-120%) scale(1.3); }
+    }
+
+    /* Layout */
+    #main { max-width: 900px; margin: 0 auto; padding: 20px 16px 40px; }
+    h1 { font-size: 2rem; text-align: center; color: var(--gold); margin-bottom: .25rem; }
+    h2 { font-size: 1.3rem; color: var(--accent); margin-bottom: 1rem; text-align: center; }
+    h3 { font-size: 1.1rem; margin-bottom: .75rem; color: #90caf9; }
+    .subtitle { text-align: center; color: #aaa; margin-bottom: 1.5rem; font-size: 1.1rem; }
+    .card {
+      background: var(--surface); border-radius: 14px; padding: 24px;
+      border: 1px solid var(--surface2); margin-bottom: 16px;
+    }
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* Buttons */
+    .btn {
+      display: inline-block; padding: 10px 20px; border: none; border-radius: 8px;
+      font-size: 1rem; font-weight: 600; cursor: pointer; margin: 4px;
+      transition: transform .15s, opacity .15s;
+    }
+    .btn:hover:not(:disabled) { transform: translateY(-1px); }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-gold { background: linear-gradient(135deg, #ffd700, #ffaa00); color: #333; }
+    .btn-green { background: #2e7d32; color: #fff; }
+    .btn-blue { background: #1565c0; color: #fff; }
+    .btn-red { background: #c62828; color: #fff; }
+    .btn-outline { background: transparent; border: 2px solid #666; color: var(--text); }
+    .btn-g1 { background: var(--g1); color: #333; }
+    .btn-g2 { background: var(--g2); color: #fff; }
+    .btn-g3 { background: var(--g3); color: #fff; }
+    .btn-g4 { background: var(--g4); color: #fff; }
+    .btn-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 12px 0; }
+    .btn-lg { padding: 14px 28px; font-size: 1.15rem; }
+
+    /* Question area */
+    .round-label { text-align: center; font-size: .9rem; color: #90caf9; text-transform: uppercase; letter-spacing: 1px; }
+    .q-number { text-align: center; color: #888; font-size: .85rem; margin: 4px 0 12px; }
+    .instructions { text-align: center; color: #bbb; margin-bottom: 16px; font-style: italic; }
+    .question-text {
+      font-size: 1.5rem; text-align: center; padding: 20px;
+      background: var(--surface2); border-radius: 10px; margin-bottom: 16px;
+      line-height: 1.5;
+    }
+    .answer-box {
+      display: none; background: #1b4332; border: 2px solid #40916c;
+      border-radius: 10px; padding: 16px; margin: 12px 0; text-align: center;
+      font-size: 1.2rem;
+    }
+    .answer-box.visible { display: block; }
+    .scoring-section { margin-top: 16px; }
+    .scoring-section h4 { text-align: center; margin-bottom: 8px; color: #81c784; }
+    .scoring-section.disabled { opacity: .3; pointer-events: none; }
+
+    /* Timer */
+    .timer-area { display: flex; flex-direction: column; align-items: center; margin: 16px 0; }
+    .timer-circle {
+      width: 90px; height: 90px; border-radius: 50%;
+      border: 4px solid #333; position: relative;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.8rem; font-weight: 800;
+      background: conic-gradient(var(--accent) var(--pct, 0%), #333 0%);
+    }
+    .timer-circle::after {
+      content: ''; position: absolute; inset: 6px;
+      border-radius: 50%; background: var(--surface);
+    }
+    .timer-num { position: relative; z-index: 1; }
+    .timer-bar-wrap {
+      width: 100%; max-width: 400px; height: 12px; background: #333;
+      border-radius: 6px; overflow: hidden; margin-top: 8px;
+    }
+    .timer-bar { height: 100%; background: var(--accent); transition: width .3s linear; border-radius: 6px; }
+    .timer-controls { margin-top: 8px; }
+
+    /* Twist cards */
+    .mystery-card {
+      width: 200px; height: 280px; margin: 20px auto;
+      background: linear-gradient(135deg, #4a148c, #7b1fa2);
+      border-radius: 16px; border: 3px solid var(--gold);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 1.4rem; font-weight: 800; color: var(--gold);
+      animation: cardPulse 2s ease infinite; text-align: center; padding: 16px;
+    }
+    @keyframes cardPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.03)} }
+    .twist-reveal {
+      text-align: center; padding: 24px; background: #4a148c;
+      border-radius: 14px; border: 2px solid var(--gold); margin: 16px 0;
+      animation: twistIn .5s ease;
+    }
+    @keyframes twistIn { from{opacity:0;transform:scale(.9)} to{opacity:1;transform:scale(1)} }
+
+    /* Round 3 silhouette */
+    .silhouette {
+      width: 160px; height: 200px; margin: 0 auto 16px;
+      background: #111; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 5rem; filter: brightness(0);
+      transition: filter .5s;
+    }
+    .silhouette.revealed { filter: none; background: var(--surface2); }
+    .clue-list { list-style: none; margin: 12px 0; }
+    .clue-list li {
+      padding: 10px 16px; margin: 6px 0; background: var(--surface2);
+      border-radius: 8px; border-left: 4px solid var(--accent);
+      display: none;
+    }
+    .clue-list li.visible { display: block; animation: clueIn .4s ease; }
+    @keyframes clueIn { from{opacity:0;transform:translateX(-10px)} to{opacity:1;transform:none} }
+    .wager-row { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin: 12px 0; }
+    .wager-group { text-align: center; padding: 10px; background: var(--surface2); border-radius: 8px; }
+    .wager-group label { display: block; font-weight: 700; margin-bottom: 6px; font-size: .85rem; }
+
+    /* Final round */
+    .prompt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0; }
+    .prompt-item {
+      padding: 12px; background: var(--surface2); border-radius: 8px;
+      text-align: center; font-size: 1rem;
+    }
+    .prompt-item.revealed { border: 2px solid #40916c; }
+    .final-answer { color: #81c784; font-size: .9rem; margin-top: 4px; display: none; }
+    .prompt-item.revealed .final-answer { display: block; }
+
+    /* Winner */
+    .winner-screen { text-align: center; }
+    .vault {
+      width: 200px; height: 200px; margin: 20px auto;
+      background: linear-gradient(180deg, #555, #222);
+      border: 6px solid var(--gold); border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 4rem; position: relative; overflow: hidden;
+    }
+    .vault.open { animation: vaultOpen 1.5s ease forwards; }
+    @keyframes vaultOpen {
+      0% { transform: perspective(400px) rotateY(0); }
+      50% { transform: perspective(400px) rotateY(-30deg); box-shadow: 0 0 60px var(--gold); }
+      100% { transform: perspective(400px) rotateY(-60deg); background: linear-gradient(180deg,#ffd700,#ff8f00); }
+    }
+    .confetti { position: fixed; inset: 0; pointer-events: none; z-index: 2000; }
+    .standings { margin: 20px auto; max-width: 400px; }
+    .standings li {
+      display: flex; justify-content: space-between; padding: 10px 16px;
+      margin: 4px 0; border-radius: 8px; font-weight: 600;
+    }
+    .standings li.winner-row { background: linear-gradient(90deg, rgba(255,215,0,.3), transparent); border: 1px solid var(--gold); }
+
+    /* Teacher panel */
+    #teacherPanel {
+      position: fixed; bottom: 0; right: 0; z-index: 999;
+      background: rgba(0,0,0,.85); border-top-left-radius: 12px;
+      border: 1px solid #444; max-width: 320px; font-size: .8rem;
+    }
+    #teacherPanel header {
+      padding: 8px 12px; cursor: pointer; display: flex;
+      justify-content: space-between; align-items: center;
+      background: #222; border-top-left-radius: 12px;
+    }
+    #teacherPanel .panel-body { padding: 10px 12px; display: none; }
+    #teacherPanel.open .panel-body { display: block; }
+    #teacherPanel kbd {
+      background: #444; padding: 1px 5px; border-radius: 3px; font-size: .75rem;
+    }
+
+    /* Special banners */
+    .banner {
+      text-align: center; padding: 14px; border-radius: 10px;
+      font-size: 1.3rem; font-weight: 800; margin: 12px 0;
+      animation: bannerIn .6s ease;
+    }
+    .banner-gold { background: linear-gradient(90deg,#b8860b,#ffd700,#b8860b); color: #333; }
+    .banner-shield { background: linear-gradient(90deg,#1a237e,#3949ab,#1a237e); color: #fff; }
+    @keyframes bannerIn { from{opacity:0;transform:scale(.8)} to{opacity:1;transform:scale(1)} }
+
+    /* Setup */
+    .name-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0; }
+    .name-inputs label { display: block; font-size: .8rem; margin-bottom: 4px; color: #aaa; }
+    .name-inputs input {
+      width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #555;
+      background: var(--surface2); color: var(--text); font-size: 1rem;
+    }
+    .preset-names { text-align: center; margin: 8px 0; }
+    .how-to-play { text-align: left; line-height: 1.7; color: #ccc; }
+    .how-to-play li { margin: 6px 0; }
+
+    /* Blocked steal */
+    .blocked-msg {
+      text-align: center; font-size: 1.4rem; font-weight: 800;
+      color: #64b5f6; padding: 12px; animation: bannerIn .5s ease;
+    }
+
+    @media (max-width: 600px) {
+      .score-num { font-size: 1.4rem; }
+      .group-name { font-size: .65rem; }
+      .question-text { font-size: 1.2rem; }
+      .name-inputs { grid-template-columns: 1fr; }
+      .prompt-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="scoreBar" style="display:none">
+  <div class="group-box" data-g="0"><div class="group-name" id="gn0">Group 1</div><div class="score-num" id="sc0">0</div><div class="group-meta" id="gm0"></div></div>
+  <div class="group-box" data-g="1"><div class="group-name" id="gn1">Group 2</div><div class="score-num" id="sc1">0</div><div class="group-meta" id="gm1"></div></div>
+  <div class="group-box" data-g="2"><div class="group-name" id="gn2">Group 3</div><div class="score-num" id="sc2">0</div><div class="group-meta" id="gm2"></div></div>
+  <div class="group-box" data-g="3"><div class="group-name" id="gn3">Group 4</div><div class="score-num" id="sc3">0</div><div class="group-meta" id="gm3"></div></div>
+</div>
+
+<div id="main">
+
+  <!-- OPENING -->
+  <div id="screen-opening" class="screen active">
+    <div class="card" style="text-align:center;padding:40px 24px">
+      <h1>OPERACIÓN SER</h1>
+      <p class="subtitle">Abre la bóveda</p>
+      <p style="color:#888;margin-bottom:24px">Practica el presente de <em>ser</em> · 20–25 min · 4 equipos</p>
+      <div class="btn-row">
+        <button class="btn btn-gold btn-lg" onclick="startNewGame()">Start New Game</button>
+        <button class="btn btn-primary btn-lg" id="btnContinue" onclick="continueGame()" disabled>Continue Saved Game</button>
+        <button class="btn btn-outline" onclick="showScreen('howto')">How to Play</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOW TO PLAY -->
+  <div id="screen-howto" class="screen">
+    <div class="card">
+      <h2>How to Play</h2>
+      <ul class="how-to-play">
+        <li><strong>4 rounds</strong> — lightning steal, correct &amp; steal, secret identity, vault code.</li>
+        <li><strong>Teacher controls everything</strong> — reveal answers, award points, start timers.</li>
+        <li><strong>Keyboard shortcuts:</strong> Space = timer · A = reveal · N = next · U = undo · 1–4 = award point</li>
+        <li>Scores save automatically. Refreshing the page restores progress.</li>
+        <li>Twist cards appear between rounds — click to reveal, then confirm.</li>
+        <li>Shields block one steal. Wagers in Round 3 can gain or lose points.</li>
+      </ul>
+      <div class="btn-row"><button class="btn btn-outline" onclick="showScreen('opening')">← Back</button></div>
+    </div>
+  </div>
+
+  <!-- TEAM SETUP -->
+  <div id="screen-setup" class="screen">
+    <div class="card">
+      <h2>Team Setup</h2>
+      <p class="instructions">Rename teams or keep defaults. Click a preset to auto-fill.</p>
+      <div class="preset-names">
+        <button class="btn btn-outline" onclick="applyPreset()">Los Jaguares · Los Quetzales · Los Cóndores · Los Pumas</button>
+      </div>
+      <div class="name-inputs">
+        <div><label>Team 1 (Gold)</label><input id="name0" value="Group 1"></div>
+        <div><label>Team 2 (Green)</label><input id="name1" value="Group 2"></div>
+        <div><label>Team 3 (Blue)</label><input id="name2" value="Group 3"></div>
+        <div><label>Team 4 (Red)</label><input id="name3" value="Group 4"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-gold btn-lg" onclick="confirmSetup()">¡Empezar!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAME PLAY -->
+  <div id="screen-game" class="screen">
+    <div class="card" id="gameCard">
+      <div class="round-label" id="roundLabel"></div>
+      <div class="q-number" id="qNumber"></div>
+      <div id="activeTeamBanner" style="display:none;text-align:center;margin-bottom:12px"></div>
+      <div class="instructions" id="instructions"></div>
+      <div id="specialBanner"></div>
+      <div class="question-text" id="questionText"></div>
+      <div id="silhouetteArea"></div>
+      <div id="clueArea"></div>
+      <div id="wagerArea"></div>
+      <div id="promptArea"></div>
+
+      <div class="timer-area" id="timerArea">
+        <div class="timer-circle" id="timerCircle"><span class="timer-num" id="timerNum">0</span></div>
+        <div class="timer-bar-wrap"><div class="timer-bar" id="timerBar"></div></div>
+        <div class="timer-controls btn-row">
+          <button class="btn btn-primary" id="btnTimer" onclick="toggleTimer()">Start Timer</button>
+          <button class="btn btn-outline" onclick="addTime(5)">+5s</button>
+          <button class="btn btn-outline" onclick="resetTimer()">Reset</button>
+        </div>
+      </div>
+
+      <div class="answer-box" id="answerBox">
+        <strong>Respuesta:</strong> <span id="answerText"></span>
+        <div id="altAnswers" style="font-size:.9rem;color:#a5d6a7;margin-top:6px"></div>
+      </div>
+
+      <div id="blockedStealMsg"></div>
+      <div class="scoring-section disabled" id="scoringSection"></div>
+
+      <div class="btn-row" style="margin-top:20px">
+        <button class="btn btn-green" id="btnReveal" onclick="revealAnswer()">Reveal Answer</button>
+        <button class="btn btn-outline" id="btnUndo" onclick="undoLast()">Undo Last Score</button>
+        <button class="btn btn-outline" onclick="skipQuestion()">Skip Question</button>
+        <button class="btn btn-blue" id="btnNext" onclick="nextQuestion()" style="display:none">Next Question →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TWIST CARD -->
+  <div id="screen-twist" class="screen">
+    <div class="card" style="text-align:center">
+      <h2>Carta Misteriosa</h2>
+      <div id="twistCardArea"></div>
+      <div id="twistContent" style="display:none"></div>
+      <div class="btn-row" id="twistActions" style="display:none">
+        <button class="btn btn-gold" onclick="confirmTwist()">Confirmar efecto</button>
+        <button class="btn btn-outline" onclick="skipTwist()">Saltar carta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- WINNER -->
+  <div id="screen-winner" class="screen">
+    <div class="card winner-screen">
+      <h1 id="winnerTitle">¡MISIÓN CUMPLIDA!</h1>
+      <h2 id="winnerName"></h2>
+      <div class="vault" id="vault">🔒</div>
+      <ul class="standings" id="standings"></ul>
+      <div class="btn-row">
+        <button class="btn btn-gold" onclick="startNewGame()">New Game</button>
+        <button class="btn btn-outline" onclick="showScreen('opening')">Main Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TIE BREAKER -->
+  <div id="screen-tiebreaker" class="screen">
+    <div class="card">
+      <h2>¡Empate! — Desempate</h2>
+      <p class="instructions">Corrijan los dos errores:</p>
+      <div class="question-text">María, José y yo <u>son</u> estudiantes, pero tú <u>soy</u> profesor.</div>
+      <div class="timer-area">
+        <div class="timer-circle" id="tbTimerCircle"><span class="timer-num" id="tbTimerNum">20</span></div>
+        <div class="timer-controls btn-row">
+          <button class="btn btn-primary" onclick="toggleTbTimer()">Start Timer</button>
+          <button class="btn btn-outline" onclick="addTbTime(5)">+5s</button>
+        </div>
+      </div>
+      <div class="answer-box" id="tbAnswer">
+        <strong>Respuesta:</strong> María, José y yo <strong>somos</strong> estudiantes, pero tú <strong>eres</strong> profesor.
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="document.getElementById('tbAnswer').classList.add('visible')">Reveal Answer</button>
+      </div>
+      <p style="text-align:center;margin:12px 0">¿Qué equipo respondió correctamente primero?</p>
+      <div class="btn-row" id="tbScoring"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Teacher panel -->
+<div id="teacherPanel">
+  <header onclick="toggleTeacherPanel()">
+    <span>🎓 Teacher Controls</span><span id="panelArrow">▲</span>
+  </header>
+  <div class="panel-body">
+    <p><kbd>Space</kbd> Timer · <kbd>A</kbd> Reveal · <kbd>N</kbd> Next · <kbd>U</kbd> Undo · <kbd>1-4</kbd> Award</p>
+    <button class="btn btn-red" style="width:100%;margin-top:8px" onclick="newGameConfirm()">New Game (reset)</button>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'serGameStateV1';
+
+const ROUND1 = [
+  { q: 'Yo ______ estudiante de Mizzou.', a: 'Yo soy estudiante de Mizzou.' },
+  { q: 'Tú ______ mi compañero/a de clase.', a: 'Tú eres mi compañero/a de clase.' },
+  { q: 'Carolina ______ profesora de español.', a: 'Carolina es profesora de español.' },
+  { q: 'Ana y Diego ______ estudiantes.', a: 'Ana y Diego son estudiantes.' },
+];
+
+const ROUND2 = [
+  { q: 'Nosotros <u>son</u> estudiantes.', a: 'Nosotros somos estudiantes.', wrong: true },
+  { q: 'Ella <u>soy</u> de Colombia.', a: 'Ella es de Colombia.', wrong: true },
+  { q: 'Ustedes <u>somos</u> estudiantes.', a: 'Ustedes son estudiantes.', wrong: true },
+  { q: 'Yo <u>eres</u> una persona creativa.', a: 'Yo soy una persona creativa.', wrong: true },
+  { q: 'Tú <u>es</u> mi amigo/a.', a: 'Tú eres mi amigo/a.', wrong: true },
+];
+
+const ROUND3 = [
+  { emoji: '👩‍🎤', name: 'Shakira', clues: ['Es una mujer.', 'Es colombiana.', 'Es cantante.'],
+    answers: ['Ella es Shakira.', 'Shakira es colombiana.', 'Shakira es cantante.'] },
+  { emoji: '⚽', name: 'Lionel Messi', clues: ['Es un hombre.', 'Es argentino.', 'Es futbolista.'],
+    answers: ['Él es Lionel Messi.', 'Él es Messi.', 'Messi es argentino.', 'Messi es futbolista.'] },
+  { emoji: '👩‍🎤👩‍🎤', name: 'Shakira y Karol G', clues: ['Son mujeres.', 'Son colombianas.', 'Son cantantes.'],
+    answers: ['Ellas son Shakira y Karol G.', 'Shakira y Karol G son cantantes.'] },
+  { emoji: '🎓', name: 'Estudiantes', clues: ['Son un grupo.', 'Son estudiantes.', 'Son de la misma clase.'],
+    answers: ['Ellos son estudiantes.'], perspective: 'Nosotros somos estudiantes.' },
+];
+
+const FINAL_PROMPTS = [
+  { prompt: 'yo / estudiante', a: 'Yo soy estudiante.' },
+  { prompt: 'tú / mi compañero/a', a: 'Tú eres mi compañero/a.' },
+  { prompt: 'Elena / profesora', a: 'Elena es profesora.' },
+  { prompt: 'Carlos y yo / amigos', a: 'Carlos y yo somos amigos.' },
+  { prompt: 'Ana y Luis / estudiantes', a: 'Ana y Luis son estudiantes.' },
+  { prompt: 'ustedes / estudiantes de Mizzou', a: 'Ustedes son estudiantes de Mizzou.' },
+];
+
+const TWISTS = [
+  { id: 'doble', title: 'Doble puntuación', desc: 'La próxima pregunta vale el doble de puntos.' },
+  { id: 'robo', title: 'Robo de llave', desc: 'El equipo ganador roba 1 punto a otro equipo (después de la respuesta).' },
+  { id: 'secreto', title: 'Equipo secreto', desc: 'El equipo en último lugar recibe puntos dobles en la próxima pregunta.' },
+  { id: 'todo', title: 'Todo o nada', desc: 'Cada equipo apuesta 1 punto: correcto = +2, incorrecto = −1.' },
+  { id: 'portavoz', title: 'Cambio de portavoz', desc: 'Cada equipo elige una persona nueva para la próxima respuesta. (Sin puntos)' },
+  { id: 'rescate', title: 'Rescate', desc: 'Una respuesta correcta permite recuperar 1 punto perdido.' },
+];
+
+// Twist card slots: after R1-Q2, after R2-Q2, before R3, before Final
+const TWIST_SLOTS = [
+  { after: 'r1', q: 1 },
+  { after: 'r2', q: 1 },
+  { before: 'r3' },
+  { before: 'final' },
+];
+
+let state = null;
+let timerInterval = null;
+let timerMax = 12;
+let tbTimerInterval = null;
+let tbTimerVal = 20;
+let currentTwistData = null;
+
+function defaultState() {
+  return {
+    scores: [0, 0, 0, 0],
+    groupNames: ['Group 1', 'Group 2', 'Group 3', 'Group 4'],
+    screen: 'opening',
+    currentRound: 1,
+    currentQuestion: 0,
+    completedQuestions: [],
+    awardedGroups: [],
+    wagers: [0, 0, 0, 0],
+    shields: [false, false, false, false],
+    activeTwist: null,
+    pendingTwist: null,
+    scoreHistory: [],
+    gameFinished: false,
+    answerRevealed: false,
+    round1SpeedBonus: null,
+    round2StealOpen: false,
+    round2ActiveGroup: 0,
+    round3CluesRevealed: 0,
+    round3WagersDone: false,
+    round3Results: [null, null, null, null],
+    goldenKeyQ: Math.floor(Math.random() * ROUND1.length),
+    shieldShown: false,
+    usedTwists: [],
+    twistQueue: [],
+    pendingTwistSlot: null,
+    doublePoints: false,
+    secretTeam: null,
+    todoNada: false,
+    rescateActive: false,
+    portavozMsg: false,
+    perspectiveAwarded: false,
+    finalRevealed: 0,
+    finalAwards: { first: null, second: null, five: null },
+    tieBreaker: false,
+    timerSeconds: 0,
+    timerMax: 12,
+    timerRunning: false,
+    skipTwistPending: false,
+  };
+}
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  document.getElementById('btnContinue').disabled = false;
+}
+
+function load() {
+  try {
+    const s = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return s || null;
+  } catch { return null; }
+}
+
+function hasSavedGame() {
+  const s = load();
+  return s && s.screen && s.screen !== 'opening' && !s.gameFinished;
+}
+
+function init() {
+  document.getElementById('btnContinue').disabled = !hasSavedGame();
+  const saved = load();
+  if (saved && saved.screen === 'game') {
+    state = saved;
+    restoreUI();
+  }
+}
+
+function startNewGame() {
+  if (load() && !confirm('¿Empezar un juego nuevo? Se borrará el progreso guardado.')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  state = defaultState();
+  // Build twist queue with random twists
+  state.twistQueue = TWIST_SLOTS.map((_, i) => {
+    const available = TWISTS.filter(t => !state.usedTwists.includes(t.id));
+    const pool = available.length ? available : TWISTS;
+    return pool[Math.floor(Math.random() * pool.length)];
+  });
+  showScreen('setup');
+  save();
+}
+
+function newGameConfirm() {
+  startNewGame();
+}
+
+function continueGame() {
+  state = load();
+  if (!state) return;
+  restoreUI();
+}
+
+function restoreUI() {
+  document.getElementById('scoreBar').style.display = state.screen === 'opening' || state.screen === 'howto' || state.screen === 'setup' ? 'none' : 'grid';
+  if (state.screen === 'game') renderGame();
+  else if (state.screen === 'twist') renderTwistScreen();
+  else if (state.screen === 'winner') renderWinner();
+  else if (state.screen === 'tiebreaker') renderTiebreaker();
+  else showScreen(state.screen || 'opening');
+  updateScoreBar();
+}
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  if (state) { state.screen = name; save(); }
+  const hideBar = ['opening', 'howto', 'setup'].includes(name);
+  document.getElementById('scoreBar').style.display = hideBar ? 'none' : 'grid';
+}
+
+function applyPreset() {
+  ['Los Jaguares', 'Los Quetzales', 'Los Cóndores', 'Los Pumas'].forEach((n, i) => {
+    document.getElementById('name' + i).value = n;
+  });
+}
+
+function confirmSetup() {
+  for (let i = 0; i < 4; i++) {
+    state.groupNames[i] = document.getElementById('name' + i).value.trim() || ('Group ' + (i + 1));
+  }
+  state.screen = 'game';
+  state.currentRound = 1;
+  state.currentQuestion = 0;
+  setTimerDefault();
+  showScreen('game');
+  renderGame();
+  save();
+}
+
+function setTimerDefault() {
+  const defaults = { 1: 12, 2: 15, 3: 15, 4: 90, 5: 20 };
+  timerMax = defaults[state.currentRound] || 12;
+  state.timerMax = timerMax;
+  state.timerSeconds = timerMax;
+  state.timerRunning = false;
+  clearInterval(timerInterval);
+  updateTimerDisplay();
+}
+
+function getLowestGroup() {
+  const min = Math.min(...state.scores);
+  const tied = state.scores.map((s, i) => s === min ? i : -1).filter(i => i >= 0);
+  return tied.length === 1 ? tied[0] : null;
+}
+
+function renderGame() {
+  updateScoreBar();
+  state.answerRevealed = false;
+  state.awardedGroups = [];
+  state.round1SpeedBonus = null;
+  state.round2StealOpen = false;
+  state.round3Results = [null, null, null, null];
+  state.perspectiveAwarded = false;
+
+  document.getElementById('answerBox').classList.remove('visible');
+  document.getElementById('blockedStealMsg').innerHTML = '';
+  document.getElementById('btnReveal').style.display = '';
+  document.getElementById('btnNext').style.display = 'none';
+  document.getElementById('specialBanner').innerHTML = '';
+  document.getElementById('silhouetteArea').innerHTML = '';
+  document.getElementById('clueArea').innerHTML = '';
+  document.getElementById('wagerArea').innerHTML = '';
+  document.getElementById('promptArea').innerHTML = '';
+  document.getElementById('activeTeamBanner').style.display = 'none';
+
+  document.querySelectorAll('.group-box').forEach(b => b.classList.remove('active-team'));
+
+  const r = state.currentRound;
+  const q = state.currentQuestion;
+
+  if (r === 1) renderRound1(q);
+  else if (r === 2) renderRound2(q);
+  else if (r === 3) renderRound3(q);
+  else if (r === 4) renderFinal();
+  else if (r === 5) { showWinnerOrTie(); return; }
+
+  if (state.todoNada && !state.answerRevealed) renderTodoNada();
+
+  setTimerDefault();
+  buildScoringUI();
+  save();
+}
+
+function renderTodoNada() {
+  let html = '<div class="banner" style="background:#4a148c;color:#fff;margin-bottom:12px">🎲 Todo o nada — Marquen apuesta de 1 punto por equipo</div>';
+  html += '<div class="btn-row">';
+  for (let g = 0; g < 4; g++) {
+    html += '<button class="btn btn-outline" onclick="markTodoNada(' + g + ',true)">' + state.groupNames[g] + ' apuesta ✓</button>';
+  }
+  html += '</div>';
+  document.getElementById('specialBanner').innerHTML = html;
+}
+
+function markTodoNada(g, bet) {
+  state.todoNadaBets = state.todoNadaBets || [false, false, false, false];
+  state.todoNadaBets[g] = bet;
+  save();
+}
+
+function renderRound1(q) {
+  document.getElementById('roundLabel').textContent = 'Ronda 1: Robo relámpago';
+  document.getElementById('qNumber').textContent = 'Pregunta ' + (q + 1) + ' de ' + ROUND1.length;
+  document.getElementById('instructions').textContent = 'Todos los equipos responden al mismo tiempo. 1 punto por respuesta correcta + bono de velocidad.';
+  document.getElementById('questionText').innerHTML = ROUND1[q].q.replace('______', '<strong style="color:var(--gold)">______</strong>');
+  document.getElementById('answerText').textContent = ROUND1[q].a;
+
+  if (q === state.goldenKeyQ) {
+    document.getElementById('specialBanner').innerHTML = '<div class="banner banner-gold">🔑 LLAVE DORADA — Bono de velocidad: +2 puntos</div>';
+  }
+}
+
+function renderRound2(q) {
+  document.getElementById('roundLabel').textContent = 'Ronda 2: Corrige y roba';
+  document.getElementById('qNumber').textContent = 'Pregunta ' + (q + 1) + ' de ' + ROUND2.length;
+
+  let activeG = q < 4 ? q : (getLowestGroup() ?? 0);
+  if (q === 4 && getLowestGroup() === null) {
+    document.getElementById('instructions').textContent = 'Empate en último lugar — el profesor elige el equipo activo abajo.';
+    activeG = state.round2ActiveGroup;
+  } else {
+    state.round2ActiveGroup = activeG;
+  }
+
+  document.getElementById('activeTeamBanner').style.display = 'block';
+  document.getElementById('activeTeamBanner').innerHTML =
+    '<div class="banner" style="background:var(--surface2);border:2px solid var(--gold)">Equipo activo: <strong>' + state.groupNames[activeG] + '</strong> · Recompensa: 2 puntos</div>';
+  document.querySelector('.group-box[data-g="' + activeG + '"]').classList.add('active-team');
+
+  document.getElementById('instructions').textContent = 'El equipo activo corrige la oración. Correcto = +2. Incorrecto = otros equipos pueden robar 1 punto.';
+  document.getElementById('questionText').innerHTML = ROUND2[q].q;
+  document.getElementById('answerText').textContent = ROUND2[q].a;
+
+  if (q === 1) {
+    document.getElementById('specialBanner').innerHTML = '<div class="banner banner-shield">🛡️ ESCUDO DE SER — Respuesta correcta = escudo anti-robo</div>';
+  }
+  if (q === 4 && getLowestGroup() === null) {
+    document.getElementById('specialBanner').innerHTML += '<p style="text-align:center;margin-top:8px;color:#ffd700">Empate en último — elige equipo activo:</p><div class="btn-row" id="pickLowest"></div>';
+    setTimeout(() => {
+      const el = document.getElementById('pickLowest');
+      if (!el) return;
+      for (let g = 0; g < 4; g++) {
+        const b = document.createElement('button');
+        b.className = 'btn btn-g' + (g + 1);
+        b.textContent = state.groupNames[g];
+        b.onclick = () => { state.round2ActiveGroup = g; renderRound2(4); };
+        el.appendChild(b);
+      }
+    }, 0);
+  }
+}
+
+function renderRound3(q) {
+  const m = ROUND3[q];
+  document.getElementById('roundLabel').textContent = 'Ronda 3: Identidad secreta';
+  document.getElementById('qNumber').textContent = 'Misterio ' + (q + 1) + ' de ' + ROUND3.length;
+  document.getElementById('instructions').textContent = 'Establezcan apuestas, revelen pistas, escriban una oración completa con ser.';
+  document.getElementById('questionText').textContent = '¿Quién es?';
+  document.getElementById('answerText').textContent = m.answers[0];
+  document.getElementById('altAnswers').textContent = m.answers.length > 1 ? 'También: ' + m.answers.slice(1).join(' · ') : '';
+  if (m.perspective) document.getElementById('altAnswers').textContent += (m.answers.length ? ' · ' : '') + 'Perspectiva: ' + m.perspective;
+
+  const revealed = state.round3CluesRevealed || 0;
+  document.getElementById('silhouetteArea').innerHTML =
+    '<div class="silhouette' + (state.answerRevealed ? ' revealed' : '') + '" id="silhouette">' + m.emoji + '</div>';
+
+  let clueHtml = '<ul class="clue-list" id="clueList">';
+  m.clues.forEach((c, i) => {
+    clueHtml += '<li id="clue' + i + '"' + (i < revealed ? ' class="visible"' : '') + '>' + c + '</li>';
+  });
+  clueHtml += '</ul><div class="btn-row">';
+  for (let i = 0; i < 3; i++) {
+    clueHtml += '<button class="btn btn-blue" onclick="revealClue(' + i + ')"' + (i < revealed ? ' disabled' : '') + '>Pista ' + (i + 1) + '</button>';
+  }
+  clueHtml += '</div>';
+  document.getElementById('clueArea').innerHTML = clueHtml;
+
+  if (!state.round3WagersDone) {
+    let wHtml = '<h3 style="text-align:center">Apuestas (antes de la primera pista)</h3><div class="wager-row">';
+    for (let g = 0; g < 4; g++) {
+      wHtml += '<div class="wager-group"><label>' + state.groupNames[g] + '</label>';
+      [1, 2, 3].forEach(v => {
+        wHtml += '<button class="btn btn-outline" onclick="setWager(' + g + ',' + v + ')" id="wager' + g + '_' + v + '">' + v + ' pt</button> ';
+      });
+      wHtml += '<div id="wagerStatus' + g + '" style="font-size:.8rem;margin-top:4px;color:#888"></div></div>';
+    }
+    wHtml += '</div><div class="btn-row"><button class="btn btn-gold" onclick="confirmWagers()">Confirmar apuestas</button></div>';
+    document.getElementById('wagerArea').innerHTML = wHtml;
+    state.wagers.forEach((w, g) => {
+      if (w > 0) {
+        const el = document.getElementById('wagerStatus' + g);
+        if (el) el.textContent = 'Apuesta: ' + w;
+      }
+    });
+  }
+}
+
+function setWager(g, v) {
+  state.wagers[g] = v;
+  for (let x = 1; x <= 3; x++) {
+    const btn = document.getElementById('wager' + g + '_' + x);
+    if (btn) btn.style.outline = x === v ? '3px solid var(--gold)' : '';
+  }
+  document.getElementById('wagerStatus' + g).textContent = 'Apuesta: ' + v;
+  save();
+}
+
+function confirmWagers() {
+  if (state.wagers.some(w => w === 0)) {
+    if (!confirm('Algunos equipos no tienen apuesta. ¿Continuar?')) return;
+    state.wagers = state.wagers.map(w => w || 1);
+  }
+  state.round3WagersDone = true;
+  document.getElementById('wagerArea').innerHTML = '<p style="text-align:center;color:#81c784">✓ Apuestas confirmadas</p>';
+  save();
+}
+
+function revealClue(i) {
+  const li = document.getElementById('clue' + i);
+  if (li) li.classList.add('visible');
+  state.round3CluesRevealed = Math.max(state.round3CluesRevealed, i + 1);
+  save();
+}
+
+function renderFinal() {
+  document.getElementById('roundLabel').textContent = 'Ronda Final: El código de la bóveda';
+  document.getElementById('qNumber').textContent = '6 oraciones · 90 segundos · Pasen la pizarra después de cada oración';
+  document.getElementById('instructions').textContent = 'Escriban oraciones completas con ser. Revelen respuestas una por una después del temporizador.';
+  document.getElementById('questionText').textContent = '';
+
+  let html = '<div class="prompt-grid">';
+  FINAL_PROMPTS.forEach((p, i) => {
+    const rev = i < state.finalRevealed;
+    html += '<div class="prompt-item' + (rev ? ' revealed' : '') + '" id="fp' + i + '">';
+    html += '<div>' + p.prompt + '</div>';
+    html += '<div class="final-answer">' + p.a + '</div></div>';
+  });
+  html += '</div>';
+  if (state.finalRevealed < FINAL_PROMPTS.length) {
+    html += '<div class="btn-row"><button class="btn btn-green" onclick="revealFinalAnswer()">Reveal Answer ' + (state.finalRevealed + 1) + '</button></div>';
+  }
+  document.getElementById('promptArea').innerHTML = html;
+
+  if (state.finalRevealed >= FINAL_PROMPTS.length) {
+    document.getElementById('answerText').textContent = 'Todas las respuestas reveladas.';
+    buildFinalScoring();
+  }
+}
+
+function revealFinalAnswer() {
+  state.finalRevealed++;
+  const el = document.getElementById('fp' + (state.finalRevealed - 1));
+  if (el) el.classList.add('revealed');
+  if (state.finalRevealed >= FINAL_PROMPTS.length) {
+    state.answerRevealed = true;
+    document.getElementById('btnReveal').style.display = 'none';
+    document.getElementById('btnNext').style.display = '';
+    buildFinalScoring();
+  }
+  save();
+}
+
+function buildFinalScoring() {
+  const sec = document.getElementById('scoringSection');
+  sec.classList.remove('disabled');
+  let html = '';
+  const awards = [
+    { key: 'first', label: 'Primero perfecto (+5)', pts: 5 },
+    { key: 'second', label: 'Segundo perfecto (+3)', pts: 3 },
+    { key: 'five', label: 'Cinco de seis correctas (+2)', pts: 2 },
+  ];
+  awards.forEach(a => {
+    if (state.finalAwards[a.key] !== null) return;
+    html += '<h4>' + a.label + '</h4><div class="btn-row">';
+    for (let g = 0; g < 4; g++) {
+      const used = Object.values(state.finalAwards).includes(g);
+      html += '<button class="btn btn-g' + (g + 1) + '" onclick="awardFinal(\'' + a.key + '\',' + g + ',' + a.pts + ')"' + (used ? ' disabled' : '') + '>' + state.groupNames[g] + '</button>';
+    }
+    html += '</div>';
+  });
+  if (Object.values(state.finalAwards).every(v => v !== null) || html === '') {
+    html += '<p style="text-align:center;margin-top:12px"><button class="btn btn-gold btn-lg" onclick="finishGame()">Ver resultados →</button></p>';
+  }
+  sec.innerHTML = html;
+}
+
+function awardFinal(key, g, pts) {
+  state.finalAwards[key] = g;
+  addPoints(g, pts, 'Final: ' + key);
+  buildFinalScoring();
+  save();
+}
+
+function buildScoringUI() {
+  const sec = document.getElementById('scoringSection');
+  sec.classList.add('disabled');
+  sec.innerHTML = '';
+  if (state.currentRound === 4) return;
+}
+
+function revealAnswer() {
+  if (state.answerRevealed) return;
+  state.answerRevealed = true;
+  document.getElementById('answerBox').classList.add('visible');
+  document.getElementById('btnReveal').style.display = 'none';
+  document.getElementById('btnNext').style.display = '';
+
+  const sil = document.getElementById('silhouette');
+  if (sil) sil.classList.add('revealed');
+
+  if (state.timerRunning) toggleTimer();
+
+  const sec = document.getElementById('scoringSection');
+  sec.classList.remove('disabled');
+
+  const r = state.currentRound;
+  if (r === 1) buildRound1Scoring();
+  else if (r === 2) buildRound2Scoring();
+  else if (r === 3) buildRound3Scoring();
+
+  // Handle robo de llave twist after scoring
+  if (state.activeTwist === 'robo') buildRoboLlaveUI();
+
+  save();
+}
+
+function buildRound1Scoring() {
+  const sec = document.getElementById('scoringSection');
+  const speedBonus = state.currentQuestion === state.goldenKeyQ ? 2 : 1;
+  let html = '<h4>¿Quién respondió correctamente? (+1 cada uno)</h4><div class="btn-row">';
+  for (let g = 0; g < 4; g++) {
+    html += btnGroup(g, 1, 'r1correct');
+  }
+  html += '</div>';
+  html += '<h4>Bono de velocidad (+' + speedBonus + ' — solo un equipo)</h4><div class="btn-row">';
+  for (let g = 0; g < 4; g++) {
+    const dis = state.round1SpeedBonus !== null ? ' disabled' : '';
+    html += '<button class="btn btn-g' + (g + 1) + '" onclick="awardSpeed(' + g + ',' + speedBonus + ')"' + dis + '>' + state.groupNames[g] + ' +' + speedBonus + '</button>';
+  }
+  html += '</div>';
+  sec.innerHTML = html;
+}
+
+function buildRound2Scoring() {
+  const sec = document.getElementById('scoringSection');
+  const ag = state.round2ActiveGroup;
+  let pts = 2;
+  if (state.doublePoints) pts *= 2;
+  if (state.secretTeam === ag) pts *= 2;
+
+  if (!state.round2StealOpen) {
+    let html = '<h4>Equipo activo: ' + state.groupNames[ag] + '</h4><div class="btn-row">';
+    html += '<button class="btn btn-green" onclick="awardActive(' + ag + ',' + pts + ')">✓ Correcto: ' + state.groupNames[ag] + ' +' + pts + '</button>';
+    html += '<button class="btn btn-red" onclick="openSteal()">✗ Incorrecto: Abrir robo</button>';
+    html += '</div>';
+    sec.innerHTML = html;
+  } else {
+    let html = '<h4>¿Quién robó la pregunta? (+1)</h4><div class="btn-row">';
+    for (let g = 0; g < 4; g++) {
+      if (g === ag) continue;
+      html += btnGroup(g, 1, 'r2steal');
+    }
+    html += '</div>';
+    sec.innerHTML = html;
+  }
+}
+
+function buildRound3Scoring() {
+  const sec = document.getElementById('scoringSection');
+  let html = '<h4>Calificar respuestas (apuesta: gana o pierde)</h4>';
+  for (let g = 0; g < 4; g++) {
+    const w = state.wagers[g] || 1;
+    const done = state.round3Results[g] !== null;
+    const result = state.round3Results[g];
+    html += '<div style="text-align:center;margin:8px 0"><strong>' + state.groupNames[g] + '</strong> (apuesta: ' + w + ') ';
+    if (done) {
+      html += result ? '<span style="color:#81c784;font-size:1.4rem">✓</span>' : '<span style="color:#ef5350;font-size:1.4rem">✕</span>';
+    } else {
+      html += '<button class="btn btn-green" onclick="awardWager(' + g + ',true)">✓ Correcto</button> ';
+      html += '<button class="btn btn-red" onclick="awardWager(' + g + ',false)">✕ Incorrecto</button>';
+    }
+    html += '</div>';
+  }
+  const m = ROUND3[state.currentQuestion];
+  if (m && m.perspective && !state.perspectiveAwarded) {
+    html += '<h4 style="margin-top:16px">¿Qué dicen los estudiantes? (Nosotros somos…) +1</h4><div class="btn-row">';
+    for (let g = 0; g < 4; g++) {
+      html += '<button class="btn btn-g' + (g + 1) + '" onclick="awardPerspective(' + g + ')">' + state.groupNames[g] + ' +1</button>';
+    }
+    html += '</div>';
+  }
+  sec.innerHTML = html;
+}
+
+function btnGroup(g, pts, tag) {
+  const used = state.awardedGroups.includes(g);
+  const p = calcPoints(pts, g);
+  return '<button class="btn btn-g' + (g + 1) + '" onclick="awardGroup(' + g + ',' + p + ',\'' + tag + '\')" ' + (used ? 'disabled' : '') + '>' + state.groupNames[g] + ' +' + p + '</button>';
+}
+
+function calcPoints(base, g) {
+  let p = base;
+  if (state.doublePoints) p *= 2;
+  if (state.secretTeam === g) p *= 2;
+  return p;
+}
+
+function awardGroup(g, pts, reason) {
+  if (state.awardedGroups.includes(g)) return;
+  state.awardedGroups.push(g);
+  addPoints(g, pts, reason);
+  if (state.rescateActive) { addPoints(g, 1, 'Rescate'); state.rescateActive = false; }
+  if (state.currentRound === 1) buildRound1Scoring();
+  else if (state.currentRound === 2 && state.round2StealOpen) buildRound2Scoring();
+  else rebuildAwardButtons();
+  save();
+}
+
+function awardSpeed(g, bonus) {
+  if (state.round1SpeedBonus !== null) return;
+  state.round1SpeedBonus = g;
+  addPoints(g, bonus, 'Speed bonus');
+  buildRound1Scoring();
+  save();
+}
+
+function awardActive(g, pts) {
+  if (state.awardedGroups.includes(g)) return;
+  state.awardedGroups.push(g);
+  addPoints(g, pts, 'Round 2 correct');
+  if (state.currentQuestion === 1) {
+    state.shields[g] = true;
+    state.shieldShown = true;
+    pushHistory({ group: g, action: 'shield', reason: 'Escudo earned' });
+  }
+  if (state.rescateActive) { addPoints(g, 1, 'Rescate'); state.rescateActive = false; }
+  state.activeTwist = null;
+  state.doublePoints = false;
+  state.secretTeam = null;
+  save();
+  buildRound2Scoring();
+  updateScoreBar();
+}
+
+function openSteal() {
+  state.round2StealOpen = true;
+  buildRound2Scoring();
+  save();
+}
+
+function awardWager(g, correct) {
+  if (state.round3Results[g] !== null) return;
+  state.round3Results[g] = correct;
+  const w = state.wagers[g] || 1;
+  if (correct) addPoints(g, w, 'Round 3 wager win');
+  else subtractPoints(g, w, 'Round 3 wager loss');
+  buildRound3Scoring();
+  save();
+}
+
+function awardPerspective(g) {
+  if (state.perspectiveAwarded) return;
+  state.perspectiveAwarded = true;
+  addPoints(g, 1, 'Perspective bonus');
+  buildRound3Scoring();
+  save();
+}
+
+function rebuildAwardButtons() {
+  if (state.currentRound === 1) buildRound1Scoring();
+}
+
+function addPoints(g, amt, reason) {
+  const prev = state.scores[g];
+  state.scores[g] += amt;
+  pushHistory({ group: g, amount: amt, action: 'add', reason, previousScore: prev, newScore: state.scores[g] });
+  animateScore(g, amt, true);
+  updateScoreBar();
+  save();
+}
+
+function subtractPoints(g, amt, reason, allowShield) {
+  if (allowShield !== false && (reason.includes('steal') || reason.includes('robo') || reason.includes('Robo'))) {
+    if (state.shields[g]) {
+      state.shields[g] = false;
+      pushHistory({ group: g, action: 'shield_used', reason: 'Shield blocked steal' });
+      document.getElementById('blockedStealMsg').innerHTML = '<div class="blocked-msg">🛡️ ¡ROBO BLOQUEADO!</div>';
+      updateScoreBar();
+      save();
+      return;
+    }
+  }
+  const prev = state.scores[g];
+  state.scores[g] = Math.max(0, state.scores[g] - amt);
+  pushHistory({ group: g, amount: amt, action: 'subtract', reason, previousScore: prev, newScore: state.scores[g] });
+  animateScore(g, -amt, false);
+  updateScoreBar();
+  save();
+}
+
+function pushHistory(entry) {
+  state.scoreHistory.push({ ...entry, timestamp: Date.now() });
+}
+
+function animateScore(g, amt, positive) {
+  const box = document.querySelector('.group-box[data-g="' + g + '"]');
+  box.classList.add(positive ? 'glow-green' : 'glow-red', 'score-pop');
+  const fl = document.createElement('div');
+  fl.className = 'float-pts ' + (positive ? 'pos' : 'neg');
+  fl.textContent = (positive ? '+' : '') + amt;
+  box.appendChild(fl);
+  setTimeout(() => { box.classList.remove('glow-green', 'glow-red', 'score-pop'); fl.remove(); }, 1200);
+}
+
+function updateScoreBar() {
+  if (!state) return;
+  for (let g = 0; g < 4; g++) {
+    document.getElementById('gn' + g).textContent = state.groupNames[g];
+    document.getElementById('sc' + g).textContent = state.scores[g];
+    let meta = '';
+    if (state.shields[g]) meta += '<span class="shield-icon">🛡️</span> ';
+    if (state.wagers[g] > 0 && state.currentRound === 3 && !state.round3WagersDone) meta += 'Apuesta ' + state.wagers[g];
+    else if (state.wagers[g] > 0 && state.currentRound === 3) meta += 'Ap: ' + state.wagers[g];
+    document.getElementById('gm' + g).innerHTML = meta;
+  }
+}
+
+function undoLast() {
+  const h = state.scoreHistory.pop();
+  if (!h) { alert('No hay acciones para deshacer.'); return; }
+  if (h.action === 'add') state.scores[h.group] = h.previousScore;
+  else if (h.action === 'subtract') state.scores[h.group] = h.previousScore;
+  else if (h.action === 'shield') state.shields[h.group] = false;
+  else if (h.action === 'shield_used') state.shields[h.group] = true;
+  else if (h.action === 'robo') {
+    state.scores[h.fromGroup] = h.fromPrev;
+    state.scores[h.toGroup] = h.toPrev;
+  }
+  const idx = state.awardedGroups.indexOf(h.group);
+  if (idx >= 0) state.awardedGroups.splice(idx, 1);
+  if (h.reason === 'Speed bonus') state.round1SpeedBonus = null;
+  if (h.reason && h.reason.includes('Round 3')) state.round3Results[h.group] = null;
+  updateScoreBar();
+  if (state.answerRevealed) {
+    if (state.currentRound === 1) buildRound1Scoring();
+    else if (state.currentRound === 2) buildRound2Scoring();
+    else if (state.currentRound === 3) buildRound3Scoring();
+    else if (state.currentRound === 4) buildFinalScoring();
+  }
+  save();
+}
+
+/* Twist cards */
+function shouldShowTwist() {
+  const r = state.currentRound;
+  const q = state.currentQuestion;
+  if (state.pendingTwistSlot !== null) return true;
+  // Check slots
+  if (r === 1 && q === 2) return true; // after Q2 (0-indexed: completed Q at index 1, show before Q3)
+  if (r === 2 && q === 2) return true;
+  if (r === 3 && q === 0 && state.screen !== 'twist') return false; // before r3 handled separately
+  return false;
+}
+
+function checkTwistBeforeNext() {
+  const r = state.currentRound;
+  const q = state.currentQuestion;
+  // After completing question at index 1 in R1 → twist
+  if (r === 1 && q === 2 && state.twistQueue[0]) { showTwist(0); return true; }
+  if (r === 2 && q === 2 && state.twistQueue[1]) { showTwist(1); return true; }
+  if (r === 2 && q === ROUND2.length && state.twistQueue[2]) { showTwist(2); return true; }
+  if (r === 3 && q === ROUND3.length && state.twistQueue[3]) { showTwist(3); return true; }
+  return false;
+}
+
+function showTwist(slotIdx) {
+  currentTwistData = state.twistQueue[slotIdx];
+  state.pendingTwistSlot = slotIdx;
+  state.screen = 'twist';
+  showScreen('twist');
+  renderTwistScreen();
+  save();
+}
+
+function renderTwistScreen() {
+  const area = document.getElementById('twistCardArea');
+  const content = document.getElementById('twistContent');
+  const actions = document.getElementById('twistActions');
+  if (!currentTwistData) return;
+  area.innerHTML = '<div class="mystery-card" onclick="flipTwistCard()">?<br><small style="font-size:.7rem">Toca para revelar</small></div>';
+  content.style.display = 'none';
+  actions.style.display = 'none';
+}
+
+function flipTwistCard() {
+  const t = currentTwistData;
+  document.getElementById('twistCardArea').innerHTML = '';
+  const content = document.getElementById('twistContent');
+  content.style.display = 'block';
+  content.innerHTML = '<div class="twist-reveal"><h3>' + t.title + '</h3><p>' + t.desc + '</p></div>';
+  document.getElementById('twistActions').style.display = 'flex';
+
+  if (t.id === 'secreto') {
+    const low = getLowestGroup();
+  }
+  if (t.id === 'robo') {
+    content.innerHTML += '<div id="roboUI"></div>';
+  }
+}
+
+function confirmTwist() {
+  const t = currentTwistData;
+  state.usedTwists.push(t.id);
+  state.activeTwist = t.id;
+  if (t.id === 'doble') state.doublePoints = true;
+  if (t.id === 'secreto') {
+    const low = getLowestGroup();
+    if (low !== null) state.secretTeam = low;
+    else state.portavozMsg = true; // teacher will choose via prompt
+  }
+  if (t.id === 'todo') state.todoNada = true;
+  if (t.id === 'rescate') state.rescateActive = true;
+  if (t.id === 'portavoz') {
+    alert('¡Cambio de portavoz! Cada equipo elige una persona nueva.');
+    state.activeTwist = null;
+  }
+  if (t.id === 'secreto' && getLowestGroup() === null) {
+    const choice = prompt('Empate en último lugar. Ingresa 1, 2, 3, o 4 para el equipo secreto:');
+    const g = parseInt(choice) - 1;
+    if (g >= 0 && g < 4) state.secretTeam = g;
+  }
+  state.pendingTwistSlot = null;
+  currentTwistData = null;
+  state.screen = 'game';
+  showScreen('game');
+  renderGame();
+  save();
+}
+
+function skipTwist() {
+  state.pendingTwistSlot = null;
+  currentTwistData = null;
+  state.screen = 'game';
+  showScreen('game');
+  renderGame();
+  save();
+}
+
+function buildRoboLlaveUI() {
+  if (state.activeTwist !== 'robo') return;
+  const sec = document.getElementById('scoringSection');
+  sec.innerHTML += '<h4 style="margin-top:16px">🔑 Robo de llave</h4><p style="text-align:center;font-size:.9rem">Ganador roba 1 punto:</p><div id="roboSelect"></div>';
+  buildRoboSelect();
+}
+
+function buildRoboSelect() {
+  let html = '<p>Equipo ganador:</p><div class="btn-row">';
+  for (let g = 0; g < 4; g++) html += '<button class="btn btn-g' + (g+1) + '" onclick="selectRoboWinner(' + g + ')">' + state.groupNames[g] + '</button>';
+  html += '</div><div id="roboVictim"></div>';
+  document.getElementById('roboSelect').innerHTML = html;
+}
+
+let roboWinner = null;
+function selectRoboWinner(g) {
+  roboWinner = g;
+  let html = '<p>¿De quién robar?</p><div class="btn-row">';
+  for (let v = 0; v < 4; v++) {
+    if (v === g) continue;
+    html += '<button class="btn btn-red" onclick="executeRobo(' + g + ',' + v + ')">' + state.groupNames[v] + ' −1</button>';
+  }
+  html += '</div>';
+  document.getElementById('roboVictim').innerHTML = html;
+}
+
+function executeRobo(from, to) {
+  const fromPrev = state.scores[from];
+  const toPrev = state.scores[to];
+  if (state.shields[to]) {
+    state.shields[to] = false;
+    pushHistory({ group: to, action: 'shield_used', reason: 'Shield blocked robo llave' });
+    document.getElementById('blockedStealMsg').innerHTML = '<div class="blocked-msg">🛡️ ¡ROBO BLOQUEADO!</div>';
+  } else {
+    state.scores[to] = Math.max(0, state.scores[to] - 1);
+    state.scores[from] += 1;
+    pushHistory({ action: 'robo', fromGroup: from, toGroup: to, fromPrev, toPrev, reason: 'Robo de llave' });
+    animateScore(from, 1, true);
+    animateScore(to, -1, false);
+  }
+  state.activeTwist = null;
+  updateScoreBar();
+  save();
+}
+
+function nextQuestion() {
+  const r = state.currentRound;
+
+  // Mark completed
+  state.completedQuestions.push(r + '-' + state.currentQuestion);
+  state.currentQuestion++;
+
+  // Reset per-question state
+  state.round3CluesRevealed = 0;
+  state.round3WagersDone = false;
+  state.wagers = [0, 0, 0, 0];
+  state.doublePoints = false;
+  state.secretTeam = null;
+  state.todoNada = false;
+  state.todoNadaBets = [false, false, false, false];
+
+  if (r === 1 && state.currentQuestion === 2) { showTwist(0); return; }
+  if (r === 1 && state.currentQuestion >= ROUND1.length) {
+    state.currentRound = 2;
+    state.currentQuestion = 0;
+    if (state.twistQueue[2]) { /* twist before r3 is after r2 */ }
+  } else if (r === 2 && state.currentQuestion === 2) { showTwist(1); return; }
+  else if (r === 2 && state.currentQuestion >= ROUND2.length) {
+    if (state.twistQueue[2]) { showTwist(2); return; }
+    state.currentRound = 3;
+    state.currentQuestion = 0;
+  } else if (r === 3 && state.currentQuestion >= ROUND3.length) {
+    if (state.twistQueue[3]) { showTwist(3); return; }
+    state.currentRound = 4;
+    state.currentQuestion = 0;
+    state.finalRevealed = 0;
+    state.finalAwards = { first: null, second: null, five: null };
+  } else if (r === 4) {
+    finishGame();
+    return;
+  }
+
+  renderGame();
+}
+
+function skipQuestion() {
+  if (!confirm('¿Saltar esta pregunta?')) return;
+  state.answerRevealed = true;
+  nextQuestion();
+}
+
+function finishGame() {
+  state.gameFinished = true;
+  state.screen = 'winner';
+  showWinnerOrTie();
+  save();
+}
+
+function showWinnerOrTie() {
+  const max = Math.max(...state.scores);
+  const winners = state.scores.map((s, i) => s === max ? i : -1).filter(i => i >= 0);
+  if (winners.length > 1) {
+    state.screen = 'tiebreaker';
+    showScreen('tiebreaker');
+    renderTiebreaker();
+    save();
+    return;
+  }
+  showScreen('winner');
+  renderWinner(winners[0]);
+  save();
+}
+
+function renderWinner(winnerG) {
+  const g = winnerG !== undefined ? winnerG : state.scores.indexOf(Math.max(...state.scores));
+  document.getElementById('winnerTitle').textContent = '¡MISIÓN CUMPLIDA!';
+  document.getElementById('winnerName').textContent = state.groupNames[g] + ' ABRE LA BÓVEDA!';
+  document.getElementById('winnerName').style.color = ['var(--g1)','var(--g2)','var(--g3)','var(--g4)'][g];
+
+  setTimeout(() => {
+    document.getElementById('vault').classList.add('open');
+    document.getElementById('vault').textContent = '🔑';
+    launchConfetti();
+  }, 500);
+
+  const sorted = state.scores.map((s, i) => ({ s, i })).sort((a, b) => b.s - a.s);
+  let html = '';
+  sorted.forEach((item, rank) => {
+    html += '<li class="' + (item.i === g ? 'winner-row' : '') + '"><span>' + (rank + 1) + '. ' + state.groupNames[item.i] + '</span><span>' + item.s + ' pts</span></li>';
+  });
+  document.getElementById('standings').innerHTML = html;
+}
+
+function renderTiebreaker() {
+  let html = '';
+  for (let g = 0; g < 4; g++) {
+    html += '<button class="btn btn-g' + (g+1) + ' btn-lg" onclick="winTiebreaker(' + g + ')">' + state.groupNames[g] + ' +1 🏆</button>';
+  }
+  document.getElementById('tbScoring').innerHTML = html;
+}
+
+function winTiebreaker(g) {
+  addPoints(g, 1, 'Tiebreaker win');
+  state.tieBreaker = false;
+  renderWinner(g);
+  showScreen('winner');
+  save();
+}
+
+function launchConfetti() {
+  const c = document.createElement('div');
+  c.className = 'confetti';
+  document.body.appendChild(c);
+  const colors = ['#ffd700','#e94560','#4caf50','#2196f3','#ff5722'];
+  for (let i = 0; i < 80; i++) {
+    const p = document.createElement('div');
+    p.style.cssText = 'position:absolute;width:8px;height:8px;background:' + colors[i % colors.length] +
+      ';left:' + Math.random() * 100 + '%;top:-10px;border-radius:2px;animation:fall ' + (2 + Math.random() * 2) + 's linear forwards;animation-delay:' + Math.random() + 's';
+    c.appendChild(p);
+  }
+  const style = document.createElement('style');
+  style.textContent = '@keyframes fall { to { transform: translateY(100vh) rotate(720deg); opacity: 0; } }';
+  document.head.appendChild(style);
+  setTimeout(() => c.remove(), 5000);
+}
+
+/* Timer */
+function updateTimerDisplay() {
+  const s = state.timerSeconds;
+  document.getElementById('timerNum').textContent = s;
+  const pct = timerMax > 0 ? ((timerMax - s) / timerMax * 100) : 0;
+  document.getElementById('timerCircle').style.setProperty('--pct', pct + '%');
+  document.getElementById('timerBar').style.width = (s / timerMax * 100) + '%';
+  document.getElementById('btnTimer').textContent = state.timerRunning ? 'Pause' : (s < timerMax ? 'Resume' : 'Start Timer');
+}
+
+function toggleTimer() {
+  if (state.timerRunning) {
+    clearInterval(timerInterval);
+    state.timerRunning = false;
+  } else {
+    state.timerRunning = true;
+    timerInterval = setInterval(() => {
+      if (state.timerSeconds > 0) {
+        state.timerSeconds--;
+        updateTimerDisplay();
+        save();
+      } else {
+        clearInterval(timerInterval);
+        state.timerRunning = false;
+        updateTimerDisplay();
+      }
+    }, 1000);
+  }
+  updateTimerDisplay();
+  save();
+}
+
+function addTime(sec) {
+  state.timerSeconds += sec;
+  updateTimerDisplay();
+  save();
+}
+
+function resetTimer() {
+  clearInterval(timerInterval);
+  state.timerRunning = false;
+  state.timerSeconds = timerMax;
+  updateTimerDisplay();
+  save();
+}
+
+function toggleTbTimer() {
+  if (tbTimerInterval) { clearInterval(tbTimerInterval); tbTimerInterval = null; return; }
+  tbTimerInterval = setInterval(() => {
+    tbTimerVal--;
+    document.getElementById('tbTimerNum').textContent = tbTimerVal;
+    if (tbTimerVal <= 0) clearInterval(tbTimerInterval);
+  }, 1000);
+}
+
+function addTbTime(s) { tbTimerVal += s; document.getElementById('tbTimerNum').textContent = tbTimerVal; }
+
+function toggleTeacherPanel() {
+  document.getElementById('teacherPanel').classList.toggle('open');
+  document.getElementById('panelArrow').textContent =
+    document.getElementById('teacherPanel').classList.contains('open') ? '▼' : '▲';
+}
+
+/* Keyboard */
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.code === 'Space') { e.preventDefault(); if (state && state.screen === 'game') toggleTimer(); }
+  if (e.key === 'a' || e.key === 'A') { if (state && state.screen === 'game' && !state.answerRevealed) revealAnswer(); }
+  if (e.key === 'n' || e.key === 'N') { if (state && state.screen === 'game' && state.answerRevealed) nextQuestion(); }
+  if (e.key === 'u' || e.key === 'U') undoLast();
+  if (e.key >= '1' && e.key <= '4') {
+    const g = parseInt(e.key) - 1;
+    if (state && state.answerRevealed && state.currentRound === 1) awardGroup(g, 1, 'keyboard');
+  }
+});
+
+init();
+</script>
+</body>
+</html>
