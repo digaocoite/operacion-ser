@@ -505,7 +505,7 @@
     <div class="card">
       <h2>¡Empate! — Desempate</h2>
       <p class="instructions">Corrijan los dos errores:</p>
-      <div class="question-text" id="tbQuestion">María, José y yo <u>son</u> estudiantes, pero tú <u>soy</u> profesor.</div>
+      <div class="question-text" id="tbQuestion"><u>Yo</u> eres estudiante, pero las chicas <u>es</u> de Colombia.</div>
       <div class="timer-area">
         <div class="timer-circle" id="tbTimerCircle"><span class="timer-num" id="tbTimerNum">20</span></div>
         <div class="timer-controls btn-row">
@@ -539,17 +539,17 @@ const STORAGE_KEY = 'serGameStateV1';
 
 const ROUND1 = [
   { q: 'Yo ______ estudiante de Mizzou.', a: 'Yo soy estudiante de Mizzou.' },
-  { q: 'Tú ______ mi compañero/a de clase.', a: 'Tú eres mi compañero/a de clase.' },
-  { q: 'Carolina ______ profesora de español.', a: 'Carolina es profesora de español.' },
-  { q: 'Ana y Diego ______ estudiantes.', a: 'Ana y Diego son estudiantes.' },
+  { q: '______ eres de México.', a: 'Tú eres de México.' },
+  { q: 'Juan ______ profesor de español.', a: 'Juan es profesor de español.' },
+  { q: 'Las chicas ______ estudiantes inteligentes.', a: 'Las chicas son estudiantes inteligentes.' },
 ];
 
 const ROUND2 = [
-  { q: 'Nosotros <u>son</u> estudiantes.', a: 'Nosotros somos estudiantes.', wrong: true },
-  { q: 'Ella <u>soy</u> de Colombia.', a: 'Ella es de Colombia.', wrong: true },
-  { q: 'Ustedes <u>somos</u> estudiantes.', a: 'Ustedes son estudiantes.', wrong: true },
-  { q: 'Yo <u>eres</u> una persona creativa.', a: 'Yo soy una persona creativa.', wrong: true },
-  { q: 'Tú <u>es</u> mi amigo/a.', a: 'Tú eres mi amigo/a.', wrong: true },
+  { q: 'Nosotros <u>son</u> estudiantes.', a: 'Nosotros somos estudiantes.' },
+  { q: '<u>Yo</u> eres de Colombia.', a: 'Tú eres de Colombia.' },
+  { q: 'El presidente <u>somos</u> muy importante.', a: 'El presidente es muy importante.' },
+  { q: '<u>Él</u> son las chicas de la clase.', a: 'Las chicas son de la clase.' },
+  { q: 'Tú <u>es</u> mi amigo/a.', a: 'Tú eres mi amigo/a.' },
 ];
 
 const ROUND3 = [
@@ -557,19 +557,19 @@ const ROUND3 = [
     answers: ['Ella es Shakira.', 'Shakira es colombiana.', 'Shakira es cantante.'] },
   { emoji: '⚽', name: 'Lionel Messi', clues: ['Es un hombre.', 'Es argentino.', 'Es futbolista.'],
     answers: ['Él es Lionel Messi.', 'Él es Messi.', 'Messi es argentino.', 'Messi es futbolista.'] },
-  { emoji: '👩‍🎤👩‍🎤', name: 'Shakira y Karol G', clues: ['Son mujeres.', 'Son colombianas.', 'Son cantantes.'],
-    answers: ['Ellas son Shakira y Karol G.', 'Shakira y Karol G son cantantes.'] },
-  { emoji: '🎓', name: 'Estudiantes', clues: ['Son un grupo.', 'Son estudiantes.', 'Son de la misma clase.'],
-    answers: ['Ellos son estudiantes.'], perspective: 'Nosotros somos estudiantes.' },
+  { emoji: '🏛️', name: 'El presidente', clues: ['Es un hombre.', 'Es el líder del país.', 'Trabaja en la Casa Blanca.'],
+    answers: ['Él es el presidente.', 'El presidente es famoso.', 'El presidente es el líder del país.'] },
+  { emoji: '👧👧', name: 'Las chicas de la clase', clues: ['Son un grupo.', 'Son estudiantes.', 'Son de Mizzou.'],
+    answers: ['Ellas son estudiantes.', 'Las chicas son estudiantes.'], perspective: 'Nosotras somos estudiantes.' },
 ];
 
 const FINAL_PROMPTS = [
   { prompt: 'yo / estudiante', a: 'Yo soy estudiante.' },
-  { prompt: 'tú / mi compañero/a', a: 'Tú eres mi compañero/a.' },
-  { prompt: 'Elena / profesora', a: 'Elena es profesora.' },
+  { prompt: '___ / eres de Mizzou', a: 'Tú eres de Mizzou.' },
+  { prompt: 'Juan / de México', a: 'Juan es de México.' },
+  { prompt: 'la profesora / muy amable', a: 'La profesora es muy amable.' },
   { prompt: 'Carlos y yo / amigos', a: 'Carlos y yo somos amigos.' },
-  { prompt: 'Ana y Luis / estudiantes', a: 'Ana y Luis son estudiantes.' },
-  { prompt: 'ustedes / estudiantes de Mizzou', a: 'Ustedes son estudiantes de Mizzou.' },
+  { prompt: 'las chicas / estudiantes', a: 'Las chicas son estudiantes.' },
 ];
 
 const TWISTS = [
@@ -1218,7 +1218,7 @@ function buildRound3Scoring() {
   }
   const m = ROUND3[state.currentQuestion];
   if (m && m.perspective && !state.perspectiveAwarded) {
-    html += '<h4 style="margin-top:16px">¿Qué dicen los estudiantes? (Nosotros somos…) +1</h4><div class="btn-row">';
+    html += '<h4 style="margin-top:16px">¿Qué dicen las chicas sobre sí mismas? (Nosotras somos…) +1</h4><div class="btn-row">';
     for (let g = 0; g < 4; g++) {
       html += '<button class="btn btn-g' + (g + 1) + '" onclick="awardPerspective(' + g + ')">' + state.groupNames[g] + ' +1</button>';
     }
@@ -1663,10 +1663,10 @@ function renderTiebreaker() {
   const qEl = document.getElementById('tbQuestion');
   if (state.tbAnswerRevealed) {
     qEl.classList.add('revealed');
-    qEl.innerHTML = '<span class="answer-label">Respuesta</span>María, José y yo <strong>somos</strong> estudiantes, pero tú <strong>eres</strong> profesor.';
+    qEl.innerHTML = '<span class="answer-label">Respuesta</span>Tú <strong>eres</strong> estudiante, pero las chicas <strong>son</strong> de Colombia.';
   } else {
     qEl.classList.remove('revealed');
-    qEl.innerHTML = 'María, José y yo <u>son</u> estudiantes, pero tú <u>soy</u> profesor.';
+    qEl.innerHTML = '<u>Yo</u> eres estudiante, pero las chicas <u>es</u> de Colombia.';
   }
   document.getElementById('btnTbReveal').style.display = state.tbAnswerRevealed ? 'none' : '';
   let html = '';
