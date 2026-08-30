@@ -170,17 +170,18 @@
       transition: background .35s ease, border-color .35s ease;
     }
     .question-text.revealed {
-      background: linear-gradient(180deg, #edf8f0, #dff3e5);
-      border: 2px solid #7bc39d;
-      color: #17452d;
+      background: #fff;
+      border: 2px solid #2e7d32;
+      color: #1b4332;
+      box-shadow: inset 0 0 0 1px rgba(46, 125, 50, .15);
     }
     .question-text .answer-label {
       display: block; font-size: .85rem; font-weight: 700;
       text-transform: uppercase; letter-spacing: .5px;
-      color: #2d8a56; margin-bottom: 8px;
+      color: #1b5e20; margin-bottom: 8px;
     }
     .question-text .answer-alt {
-      font-size: .92rem; color: #2d6a4f; margin-top: 10px; line-height: 1.45;
+      font-size: .92rem; color: #2e5c3e; margin-top: 10px; line-height: 1.45;
     }
     .answer-store { display: none; }
     .scoring-section { margin-top: 16px; }
@@ -271,8 +272,8 @@
       text-align: center; font-size: 1rem; border: 1px solid #eadfce;
       box-shadow: var(--shadow-sm);
     }
-    .prompt-item.revealed { border: 2px solid #7bc39d; background: #f3fbf6; }
-    .final-answer { color: #2d8a56; font-size: .92rem; margin-top: 6px; display: none; font-weight: 600; }
+    .prompt-item.revealed { border: 2px solid #2e7d32; background: #fff; }
+    .final-answer { color: #1b4332; font-size: .92rem; margin-top: 6px; display: none; font-weight: 600; }
     .prompt-item.revealed .final-answer { display: block; }
 
     /* Winner */
@@ -338,6 +339,33 @@
       background: linear-gradient(90deg,#1e5f74,#3d8aa8,#1e5f74);
       color: #fff; border: 2px solid #7eb8cc;
     }
+    .banner-info {
+      background: linear-gradient(90deg, #1e5f74, #2b7d96);
+      color: #fff; border: 2px solid #9ec9d8;
+      font-size: 1.15rem; font-weight: 700;
+    }
+    .banner-active {
+      background: linear-gradient(90deg, #fff3cd, #ffe69c);
+      color: #4a3b10; border: 2px solid #c9a227;
+      font-size: 1.1rem; font-weight: 700;
+    }
+    .banner-purple {
+      background: linear-gradient(135deg, #5c2d7a, #7b3fa0);
+      color: #fff; border: 2px solid #c9a227;
+      font-size: 1.1rem; font-weight: 700;
+    }
+    .msg-success {
+      text-align: center; padding: 12px 16px; margin: 8px 0;
+      background: #fff; border: 2px solid #2e7d32; border-radius: 12px;
+      color: #1b4332; font-weight: 600;
+    }
+    .msg-muted {
+      text-align: center; color: var(--text-muted);
+      font-size: .9rem; margin-top: 8px;
+    }
+    .status-ok { color: #1b5e20; font-size: 1.4rem; font-weight: 700; }
+    .status-bad { color: #b71c1c; font-size: 1.4rem; font-weight: 700; }
+    .wager-confirmed { text-align: center; color: #1b4332; font-weight: 700; }
     @keyframes bannerIn { from{opacity:0;transform:scale(.8)} to{opacity:1;transform:scale(1)} }
 
     /* Setup */
@@ -357,9 +385,9 @@
 
     /* Blocked steal */
     .blocked-msg {
-      text-align: center; font-size: 1.35rem; font-weight: 700;
-      color: var(--teal); padding: 14px; animation: bannerIn .5s ease;
-      background: #e8f5f8; border-radius: 12px; border: 2px solid #9ec9d8;
+      text-align: center; font-size: 1.25rem; font-weight: 700;
+      color: #1a3d4a; padding: 14px; animation: bannerIn .5s ease;
+      background: #fff; border-radius: 12px; border: 2px solid #1e5f74;
     }
 
     @media (max-width: 600px) {
@@ -819,7 +847,7 @@ function renderGame() {
 
   if (state.portavozBanner) {
     document.getElementById('specialBanner').innerHTML =
-      '<div class="banner" style="background:#fff;border:2px solid var(--teal);color:var(--text)">🎤 Cambio de portavoz — cada equipo elige una persona nueva.</div>';
+      '<div class="banner banner-info">🎤 Cambio de portavoz — cada equipo elige una persona nueva.</div>';
   }
   if (state.todoNada && !state.answerRevealed) renderTodoNada();
 
@@ -849,7 +877,7 @@ function restoreScoringUI() {
 
 function renderTodoNada() {
   const bets = state.todoNadaBets || [false, false, false, false];
-  let html = '<div class="banner" style="background:linear-gradient(135deg,#6b2d8b,#9b4cc7);color:#fff;margin-bottom:12px">🎲 Todo o nada — Marquen quién apuesta 1 punto</div>';
+  let html = '<div class="banner banner-purple">🎲 Todo o nada — Marquen quién apuesta 1 punto</div>';
   html += '<div class="btn-row">';
   for (let g = 0; g < 4; g++) {
     const on = bets[g];
@@ -879,7 +907,7 @@ function buildTodoNadaScoring() {
     const result = state.todoNadaResults[g];
     html += '<div style="text-align:center;margin:8px 0"><strong>' + state.groupNames[g] + '</strong> ';
     if (done) {
-      html += result ? '<span style="color:#2d8a56;font-size:1.4rem">✓ +2</span>' : '<span style="color:#c0392b;font-size:1.4rem">✕ −1</span>';
+      html += result ? '<span class="status-ok">✓ +2</span>' : '<span class="status-bad">✕ −1</span>';
     } else {
       html += '<button class="btn btn-green" onclick="awardTodoNada(' + g + ',true)">✓ +2</button> ';
       html += '<button class="btn btn-red" onclick="awardTodoNada(' + g + ',false)">✕ −1</button>';
@@ -924,7 +952,7 @@ function renderRound2(q) {
 
   document.getElementById('activeTeamBanner').style.display = 'block';
   document.getElementById('activeTeamBanner').innerHTML =
-    '<div class="banner" style="background:#fff;border:2px solid var(--gold);color:var(--text)">Equipo activo: <strong style="color:var(--teal)">' + state.groupNames[activeG] + '</strong> · Recompensa: 2 puntos</div>';
+    '<div class="banner banner-active">Equipo activo: <strong>' + state.groupNames[activeG] + '</strong> · Recompensa: 2 puntos</div>';
   document.querySelector('.group-box[data-g="' + activeG + '"]').classList.add('active-team');
 
   document.getElementById('instructions').textContent = 'El equipo activo corrige la oración. Correcto = +2. Incorrecto = otros equipos pueden robar 1 punto.';
@@ -995,7 +1023,7 @@ function renderRound3(q) {
       }
     });
   } else {
-    document.getElementById('wagerArea').innerHTML = '<p style="text-align:center;color:#2d8a56;font-weight:700">✓ Apuestas confirmadas</p>';
+    document.getElementById('wagerArea').innerHTML = '<p class="wager-confirmed">✓ Apuestas confirmadas</p>';
   }
 }
 
@@ -1015,7 +1043,7 @@ function confirmWagers() {
     state.wagers = state.wagers.map(w => w || 1);
   }
   state.round3WagersDone = true;
-  document.getElementById('wagerArea').innerHTML = '<p style="text-align:center;color:#2d8a56;font-weight:700">✓ Apuestas confirmadas</p>';
+  document.getElementById('wagerArea').innerHTML = '<p class="wager-confirmed">✓ Apuestas confirmadas</p>';
   save();
 }
 
@@ -1160,9 +1188,9 @@ function buildRound2Scoring() {
 
   if (state.round2QuestionSettled) {
     if (!state.round2StealOpen) {
-      sec.innerHTML = '<p style="text-align:center;padding:12px;background:#edf8f0;border-radius:12px;color:#17452d;font-weight:600">✓ ' + state.groupNames[ag] + ' respondió correctamente.</p>';
+      sec.innerHTML = '<p class="msg-success">✓ ' + state.groupNames[ag] + ' respondió correctamente.</p>';
     } else {
-      sec.innerHTML = '<p style="text-align:center;padding:12px;background:#edf8f0;border-radius:12px;color:#17452d;font-weight:600">✓ ' + state.groupNames[state.round2StealWinner] + ' robó la pregunta (+1).</p>';
+      sec.innerHTML = '<p class="msg-success">✓ ' + state.groupNames[state.round2StealWinner] + ' robó la pregunta (+1).</p>';
     }
     return;
   }
@@ -1209,7 +1237,7 @@ function buildRound3Scoring() {
     const result = state.round3Results[g];
     html += '<div style="text-align:center;margin:8px 0"><strong>' + state.groupNames[g] + '</strong> (apuesta: ' + w + ') ';
     if (done) {
-      html += result ? '<span style="color:#81c784;font-size:1.4rem">✓</span>' : '<span style="color:#ef5350;font-size:1.4rem">✕</span>';
+      html += result ? '<span class="status-ok">✓</span>' : '<span class="status-bad">✕</span>';
     } else {
       html += '<button class="btn btn-green" onclick="awardWager(' + g + ',true)">✓ Correcto</button> ';
       html += '<button class="btn btn-red" onclick="awardWager(' + g + ',false)">✕ Incorrecto</button>';
