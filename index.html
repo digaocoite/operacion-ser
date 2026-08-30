@@ -393,7 +393,12 @@
       background: #fff; border-radius: 12px; border: 2px solid #1e5f74;
     }
 
-    @media (max-width: 600px) {
+    .version-badge {
+      display: inline-block; margin: 0 auto 16px; padding: 6px 14px;
+      background: linear-gradient(90deg, #1e5f74, #2b7d96);
+      color: #fff; border-radius: 999px; font-size: .85rem; font-weight: 700;
+      letter-spacing: .3px; box-shadow: var(--shadow-sm);
+    }
       .score-num { font-size: 1.4rem; }
       .group-name { font-size: .65rem; }
       .question-text { font-size: 1.2rem; }
@@ -419,6 +424,7 @@
       <div class="hero-icon">🔐</div>
       <h1>OPERACIÓN SER</h1>
       <p class="subtitle">Abre la bóveda</p>
+      <p class="version-badge">VERSIÓN 2 · Ago 30, 2026</p>
       <p class="hero-tagline">Practica el presente de <em>ser</em> · 20–25 min · 4 equipos</p>
       <p id="buildLabel" style="font-size:.8rem;color:var(--text-muted);margin:-12px 0 20px"></p>
       <div class="btn-row">
@@ -571,6 +577,7 @@
 const STORAGE_KEY = 'serGameStateV1';
 const GAME_VERSION = 2;
 const BUILD_LABEL = 'Aug 30, 2026 · v2';
+// build-id: f200d28-v2-badge
 
 const ROUND1 = [
   { q: 'Yo ______ estudiante de Mizzou.', a: 'Yo soy estudiante de Mizzou.' },
