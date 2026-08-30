@@ -167,14 +167,22 @@
       border-radius: 16px; margin-bottom: 18px; line-height: 1.55;
       border: 2px solid rgba(30,95,116,.12);
       box-shadow: inset 0 1px 0 #fff;
+      transition: background .35s ease, border-color .35s ease;
     }
-    .answer-box {
-      display: none; background: linear-gradient(180deg, #edf8f0, #dff3e5);
-      border: 2px solid #7bc39d; color: #17452d;
-      border-radius: 14px; padding: 18px; margin: 14px 0; text-align: center;
-      font-size: 1.2rem;
+    .question-text.revealed {
+      background: linear-gradient(180deg, #edf8f0, #dff3e5);
+      border: 2px solid #7bc39d;
+      color: #17452d;
     }
-    .answer-box.visible { display: block; }
+    .question-text .answer-label {
+      display: block; font-size: .85rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .5px;
+      color: #2d8a56; margin-bottom: 8px;
+    }
+    .question-text .answer-alt {
+      font-size: .92rem; color: #2d6a4f; margin-top: 10px; line-height: 1.45;
+    }
+    .answer-store { display: none; }
     .scoring-section { margin-top: 16px; }
     .scoring-section h4 { text-align: center; margin-bottom: 10px; color: var(--teal); font-family: 'Fredoka', sans-serif; }
     .scoring-section.disabled { opacity: .3; pointer-events: none; }
@@ -434,6 +442,10 @@
       <div class="instructions" id="instructions"></div>
       <div id="specialBanner"></div>
       <div class="question-text" id="questionText"></div>
+      <div class="answer-store" aria-hidden="true">
+        <span id="answerText"></span>
+        <div id="altAnswers"></div>
+      </div>
       <div id="silhouetteArea"></div>
       <div id="clueArea"></div>
       <div id="wagerArea"></div>
@@ -447,11 +459,6 @@
           <button class="btn btn-outline" onclick="addTime(5)">+5s</button>
           <button class="btn btn-outline" onclick="resetTimer()">Reset</button>
         </div>
-      </div>
-
-      <div class="answer-box" id="answerBox">
-        <strong>Respuesta:</strong> <span id="answerText"></span>
-        <div id="altAnswers" style="font-size:.9rem;color:#a5d6a7;margin-top:6px"></div>
       </div>
 
       <div id="blockedStealMsg"></div>
@@ -498,16 +505,13 @@
     <div class="card">
       <h2>¡Empate! — Desempate</h2>
       <p class="instructions">Corrijan los dos errores:</p>
-      <div class="question-text">María, José y yo <u>son</u> estudiantes, pero tú <u>soy</u> profesor.</div>
+      <div class="question-text" id="tbQuestion">María, José y yo <u>son</u> estudiantes, pero tú <u>soy</u> profesor.</div>
       <div class="timer-area">
         <div class="timer-circle" id="tbTimerCircle"><span class="timer-num" id="tbTimerNum">20</span></div>
         <div class="timer-controls btn-row">
           <button class="btn btn-primary" onclick="toggleTbTimer()">Start Timer</button>
           <button class="btn btn-outline" onclick="addTbTime(5)">+5s</button>
         </div>
-      </div>
-      <div class="answer-box" id="tbAnswer">
-        <strong>Respuesta:</strong> María, José y yo <strong>somos</strong> estudiantes, pero tú <strong>eres</strong> profesor.
       </div>
       <div class="btn-row">
         <button class="btn btn-green" id="btnTbReveal" onclick="revealTbAnswer()">Reveal Answer</button>
@@ -751,6 +755,29 @@ function getLowestGroup() {
   return tied.length === 1 ? tied[0] : null;
 }
 
+function syncQuestionDisplay() {
+  const qEl = document.getElementById('questionText');
+  if (!qEl) return;
+
+  if (state.currentRound === 4 && state.finalRevealed >= FINAL_PROMPTS.length && state.answerRevealed) {
+    qEl.classList.add('revealed');
+    qEl.innerHTML = '<span class="answer-label">Respuesta</span>Todas las respuestas reveladas.';
+    return;
+  }
+
+  if (!state.answerRevealed || state.currentRound > 3) {
+    qEl.classList.remove('revealed');
+    return;
+  }
+
+  const answer = document.getElementById('answerText').textContent;
+  const alt = document.getElementById('altAnswers').textContent;
+  qEl.classList.add('revealed');
+  let html = '<span class="answer-label">Respuesta</span>' + answer;
+  if (alt) html += '<div class="answer-alt">' + alt + '</div>';
+  qEl.innerHTML = html;
+}
+
 function resetPerQuestionState() {
   state.answerRevealed = false;
   state.awardedGroups = [];
@@ -768,7 +795,6 @@ function renderGame() {
   const wasRevealed = state.answerRevealed;
 
   if (!wasRevealed) {
-    document.getElementById('answerBox').classList.remove('visible');
     document.getElementById('btnReveal').style.display = '';
     document.getElementById('btnNext').style.display = 'none';
   }
@@ -797,6 +823,7 @@ function renderGame() {
   }
   if (state.todoNada && !state.answerRevealed) renderTodoNada();
 
+  syncQuestionDisplay();
   setTimerDefault();
   if (!wasRevealed) buildScoringUI();
   else restoreScoringUI();
@@ -804,7 +831,7 @@ function renderGame() {
 }
 
 function restoreScoringUI() {
-  document.getElementById('answerBox').classList.add('visible');
+  syncQuestionDisplay();
   document.getElementById('btnReveal').style.display = 'none';
   document.getElementById('btnNext').style.display = '';
   const sil = document.getElementById('silhouette');
@@ -1036,6 +1063,7 @@ function revealFinalAnswer() {
     state.answerRevealed = true;
     document.getElementById('btnReveal').style.display = 'none';
     document.getElementById('btnNext').style.display = '';
+    syncQuestionDisplay();
     buildFinalScoring();
   }
   save();
@@ -1084,7 +1112,7 @@ function buildScoringUI() {
 function revealAnswer() {
   if (state.answerRevealed) return;
   state.answerRevealed = true;
-  document.getElementById('answerBox').classList.add('visible');
+  syncQuestionDisplay();
   document.getElementById('btnReveal').style.display = 'none';
   document.getElementById('btnNext').style.display = '';
 
@@ -1632,7 +1660,14 @@ function renderWinner(winnerG) {
 }
 
 function renderTiebreaker() {
-  document.getElementById('tbAnswer').classList.toggle('visible', !!state.tbAnswerRevealed);
+  const qEl = document.getElementById('tbQuestion');
+  if (state.tbAnswerRevealed) {
+    qEl.classList.add('revealed');
+    qEl.innerHTML = '<span class="answer-label">Respuesta</span>María, José y yo <strong>somos</strong> estudiantes, pero tú <strong>eres</strong> profesor.';
+  } else {
+    qEl.classList.remove('revealed');
+    qEl.innerHTML = 'María, José y yo <u>son</u> estudiantes, pero tú <u>soy</u> profesor.';
+  }
   document.getElementById('btnTbReveal').style.display = state.tbAnswerRevealed ? 'none' : '';
   let html = '';
   for (let g = 0; g < 4; g++) {
@@ -1647,8 +1682,6 @@ function renderTiebreaker() {
 
 function revealTbAnswer() {
   state.tbAnswerRevealed = true;
-  document.getElementById('tbAnswer').classList.add('visible');
-  document.getElementById('btnTbReveal').style.display = 'none';
   renderTiebreaker();
   save();
 }
