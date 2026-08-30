@@ -237,6 +237,13 @@
       border-radius: 16px; border: 2px solid var(--gold); margin: 16px 0;
       animation: twistIn .5s ease; box-shadow: var(--shadow);
     }
+    .twist-reveal h3 {
+      color: #ffe082; font-size: 1.5rem; margin-bottom: 10px;
+    }
+    .twist-reveal p { color: #fff; font-size: 1.1rem; line-height: 1.5; }
+    #screen-twist h2 { color: #5c2d7a; }
+    #twistContent .twist-pick-label { color: #fff; margin-top: 12px; }
+    #twistContent .twist-pick-done { color: #ffe082; font-weight: 700; }
     @keyframes twistIn { from{opacity:0;transform:scale(.9)} to{opacity:1;transform:scale(1)} }
 
     /* Round 3 silhouette */
@@ -424,7 +431,7 @@
       <div class="hero-icon">🔐</div>
       <h1>OPERACIÓN SER</h1>
       <p class="subtitle">Abre la bóveda</p>
-      <p class="version-badge">VERSIÓN 2 · Ago 30, 2026</p>
+      <p class="version-badge">VERSIÓN 2.1 · Ago 30, 2026</p>
       <p class="hero-tagline">Practica el presente de <em>ser</em> · 20–25 min · 4 equipos</p>
       <p id="buildLabel" style="font-size:.8rem;color:var(--text-muted);margin:-12px 0 20px"></p>
       <div class="btn-row">
@@ -575,8 +582,8 @@
 
 <script>
 const STORAGE_KEY = 'serGameStateV1';
-const GAME_VERSION = 2;
-const BUILD_LABEL = 'Aug 30, 2026 · v2';
+const GAME_VERSION = 3;
+const BUILD_LABEL = 'Aug 30, 2026 · v2.1';
 // build-id: f200d28-v2-badge
 
 const ROUND1 = [
@@ -1503,7 +1510,7 @@ function renderTwistScreen() {
 
 function showSecretoPicker(content) {
   if (state.secretTeam !== null) return;
-  let html = '<p style="margin-top:12px">Empate en último lugar — elige el equipo secreto:</p><div class="btn-row" id="secretoPick">';
+  let html = '<p class="twist-pick-label">Empate en último lugar — elige el equipo secreto:</p><div class="btn-row" id="secretoPick">';
   for (let g = 0; g < 4; g++) {
     html += '<button class="btn btn-g' + (g + 1) + '" onclick="pickSecretoTeam(' + g + ')">' + state.groupNames[g] + '</button>';
   }
@@ -1514,7 +1521,7 @@ function showSecretoPicker(content) {
 function pickSecretoTeam(g) {
   state.secretTeam = g;
   const el = document.getElementById('secretoPick');
-  if (el) el.innerHTML = '<p style="color:#ffe08a">Equipo secreto: <strong>' + state.groupNames[g] + '</strong></p>';
+  if (el) el.innerHTML = '<p class="twist-pick-done">Equipo secreto: <strong>' + state.groupNames[g] + '</strong></p>';
   save();
 }
 
