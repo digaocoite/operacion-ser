@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>Operación SER: Abre la bóveda</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -417,6 +420,7 @@
       <h1>OPERACIÓN SER</h1>
       <p class="subtitle">Abre la bóveda</p>
       <p class="hero-tagline">Practica el presente de <em>ser</em> · 20–25 min · 4 equipos</p>
+      <p id="buildLabel" style="font-size:.8rem;color:var(--text-muted);margin:-12px 0 20px"></p>
       <div class="btn-row">
         <button class="btn btn-gold btn-lg" onclick="startNewGame()">Start New Game</button>
         <button class="btn btn-primary btn-lg" id="btnContinue" onclick="continueGame()" disabled>Continue Saved Game</button>
@@ -558,12 +562,15 @@
   </header>
   <div class="panel-body">
     <p><kbd>Space</kbd> Timer · <kbd>A</kbd> Reveal · <kbd>N</kbd> Next · <kbd>U</kbd> Undo · <kbd>1-4</kbd> Award</p>
+    <p id="panelBuild" style="font-size:.75rem;color:var(--text-muted);margin-top:8px"></p>
     <button class="btn btn-red" style="width:100%;margin-top:8px" onclick="newGameConfirm()">New Game (reset)</button>
   </div>
 </div>
 
 <script>
 const STORAGE_KEY = 'serGameStateV1';
+const GAME_VERSION = 2;
+const BUILD_LABEL = 'Aug 30, 2026 · v2';
 
 const ROUND1 = [
   { q: 'Yo ______ estudiante de Mizzou.', a: 'Yo soy estudiante de Mizzou.' },
@@ -672,6 +679,7 @@ function defaultState() {
     todoNadaResults: [null, null, null, null],
     portavozBanner: false,
     secretoPickNeeded: false,
+    gameVersion: GAME_VERSION,
   };
 }
 
@@ -697,17 +705,24 @@ function load() {
 
 function hasSavedGame() {
   const s = load();
-  return s && s.screen && s.screen !== 'opening' && !s.gameFinished;
+  return s && s.screen && s.screen !== 'opening' && !s.gameFinished && s.gameVersion === GAME_VERSION;
 }
 
 function init() {
+  document.getElementById('buildLabel').textContent = 'Build ' + BUILD_LABEL;
+  document.getElementById('panelBuild').textContent = 'Build ' + BUILD_LABEL;
   document.getElementById('btnContinue').disabled = !hasSavedGame();
+  const s = load();
+  if (s && s.gameVersion !== GAME_VERSION && s.screen && s.screen !== 'opening') {
+    document.getElementById('btnContinue').disabled = true;
+  }
 }
 
 function startNewGame() {
   if (load() && !confirm('¿Empezar un juego nuevo? Se borrará el progreso guardado.')) return;
   localStorage.removeItem(STORAGE_KEY);
   state = defaultState();
+  state.gameVersion = GAME_VERSION;
   // Build twist queue with random twists
   state.twistQueue = TWIST_SLOTS.map((_, i) => {
     const available = TWISTS.filter(t => !state.usedTwists.includes(t.id));
@@ -725,6 +740,10 @@ function newGameConfirm() {
 function continueGame() {
   state = load();
   if (!state) return;
+  if (state.gameVersion !== GAME_VERSION) {
+    alert('Versión nueva del juego. Usa Start New Game (el progreso guardado es de una versión anterior).');
+    return;
+  }
   ensureStateFields();
   restoreUI();
 }
@@ -1206,7 +1225,7 @@ function buildRound2Scoring() {
     html += '</div>';
     sec.innerHTML = html;
   } else if (state.round2StealWinner !== null) {
-    sec.innerHTML = '<p style="text-align:center;padding:12px;background:#edf8f0;border-radius:12px;color:#17452d;font-weight:600">✓ ' + state.groupNames[state.round2StealWinner] + ' robó la pregunta (+1).</p>';
+    sec.innerHTML = '<p class="msg-success">✓ ' + state.groupNames[state.round2StealWinner] + ' robó la pregunta (+1).</p>';
   } else {
     let html = '<h4>¿Quién robó la pregunta? (+1 — solo un equipo)</h4><div class="btn-row">';
     for (let g = 0; g < 4; g++) {
